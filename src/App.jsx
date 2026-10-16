@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { AuthContext } from "./context/AuthContext";
 import "./App.css";
 
@@ -9,6 +9,14 @@ function App() {
   const [password, setPassword] = useState("");
   const [taskInput, setTaskInput] = useState("");
 
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [savedName, setSavedName] = useState(
+    () => localStorage.getItem("todoUserName") || "",
+  );
+
+  const nameInputRef = useRef(null);
+
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem("todoTasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
@@ -18,9 +26,32 @@ function App() {
     localStorage.setItem("todoTasks", JSON.stringify(tasks));
   }, [tasks]);
 
+  useEffect(() => {
+    if (user && showWelcome) {
+      nameInputRef.current?.focus();
+    }
+  }, [user, showWelcome]);
+
   function handleLogin(event) {
     event.preventDefault();
     login(email, password);
+    setShowWelcome(true);
+  }
+
+  function handleSaveName(event) {
+    event.preventDefault();
+
+    const name = nameInput.trim();
+
+    if (name === "") return;
+
+    localStorage.setItem("todoUserName", name);
+    setSavedName(name);
+    setShowWelcome(false);
+  }
+
+  function handleCloseWelcome() {
+    setShowWelcome(false);
   }
 
   function addTask(event) {
@@ -80,9 +111,38 @@ function App() {
     );
   }
 
+  if (showWelcome) {
+    return (
+      <div className="container welcome-popup">
+        <h1>Welcome to Todo List!</h1>
+
+        <p>Please enter your name to continue.</p>
+
+        <form onSubmit={handleSaveName}>
+          <input
+            ref={nameInputRef}
+            type="text"
+            value={nameInput}
+            onChange={(event) => setNameInput(event.target.value)}
+            placeholder="Enter your name"
+            required
+          />
+
+          <button type="submit">Save</button>
+
+          <button type="button" onClick={handleCloseWelcome}>
+            Close
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       <h1>My Todo List</h1>
+
+      <p>Welcome, {savedName || user.email}!</p>
       <p>Logged in as: {user.email}</p>
 
       <button onClick={logout}>Logout</button>
