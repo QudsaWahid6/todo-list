@@ -4,7 +4,7 @@ import { AuthContext } from "./context/AuthContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import TodoList from "./pages/TodoList";
-
+import Posts from "./pages/Posts";
 import "./App.css";
 
 function App() {
@@ -26,9 +26,17 @@ function App() {
     logout();
     setPage("landing");
   }
-
+  if (user && page === "posts") {
+    return <Posts user={user} onBack={() => setPage("todo")} />;
+  }
   if (user && page === "todo") {
-    return <TodoList user={user} onLogout={handleLogout} />;
+    return (
+      <TodoList
+        user={user}
+        onLogout={handleLogout}
+        onOpenPosts={() => setPage("posts")}
+      />
+    );
   }
 
   if (page === "login") {

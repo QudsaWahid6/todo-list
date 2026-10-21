@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-function TodoList({ user, onLogout }) {
+function TodoList({ user, onLogout, onOpenPosts }) {
   const taskStorageKey = `todoTasks_${user.email.toLowerCase()}`;
   const nameStorageKey = `todoUserName_${user.email.toLowerCase()}`;
 
@@ -81,6 +81,8 @@ function TodoList({ user, onLogout }) {
         <p>Stay organized, get things done!</p>
 
         <button onClick={onLogout}>Logout</button>
+
+        <button onClick={onOpenPosts}>Open Posts Manager</button>
 
         <form onSubmit={addTask}>
           <input
