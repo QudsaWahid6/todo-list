@@ -80,10 +80,10 @@ function TodoList({ user, onLogout, onOpenPosts }) {
 
         <p>Stay organized, get things done!</p>
 
-        <button onClick={onLogout}>Logout</button>
-
-        <button onClick={onOpenPosts}>Open Posts Manager</button>
-
+        <div className="header-buttons">
+          <button onClick={onLogout}>Logout</button>
+          <button onClick={onOpenPosts}>Open Posts Manager</button>
+        </div>
         <form onSubmit={addTask}>
           <input
             type="text"

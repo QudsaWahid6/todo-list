@@ -310,3 +310,8 @@ li button:hover {
     font-size: 25px;
   }
 }
+.header-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}

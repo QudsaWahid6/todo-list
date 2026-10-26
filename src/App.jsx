@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import TodoList from "./pages/TodoList";
 import Posts from "./pages/Posts";
+
 import "./App.css";
 
 function App() {
@@ -26,9 +27,11 @@ function App() {
     logout();
     setPage("landing");
   }
+
   if (user && page === "posts") {
     return <Posts user={user} onBack={() => setPage("todo")} />;
   }
+
   if (user && page === "todo") {
     return (
       <TodoList

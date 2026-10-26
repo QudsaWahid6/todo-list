@@ -1,52 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 
-function Posts({ user, onBack }) {
-  const storageKey = `posts_${user.email.toLowerCase()}`;
+const API_URL = "https://jsonplaceholder.typicode.com/posts";
 
-  const [posts, setPosts] = useState(() => {
-    const savedPosts = localStorage.getItem(storageKey);
-    return savedPosts ? JSON.parse(savedPosts) : [];
-  });
+function Posts({ user, onBack }) {
+  const [posts, setPosts] = useState([]);
+  const [post, setPost] = useState({ title: "", body: "" });
 
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
   const [editingPostId, setEditingPostId] = useState(null);
 
   const titleInputRef = useRef(null);
 
-  // Posts update karna aur user ke liye save karna
-  function savePosts(updatedPosts) {
-    setPosts(updatedPosts);
-    localStorage.setItem(storageKey, JSON.stringify(updatedPosts));
-  }
-
-  // GET: Pehle saved posts check karo, warna API se lao
+  // GET: API se posts lana
   useEffect(() => {
     async function fetchPosts() {
-      const savedPosts = localStorage.getItem(storageKey);
-
-      if (savedPosts !== null) {
-        setLoading(false);
-        console.log("Loaded saved posts for:", user.email);
-        return;
-      }
-
       try {
-        const response = await fetch(
-          "https://jsonplaceholder.typicode.com/posts",
-        );
+        setError("");
+
+        const response = await fetch(API_URL);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch posts");
+          throw new Error("Posts load nahi ho sakin.");
         }
 
         const data = await response.json();
-        const firstPosts = data.slice(0, 10);
+        setPosts(data.slice(0, 10));
 
         console.log("GET response:", data);
-        savePosts(firstPosts);
       } catch (error) {
+        setError(error.message);
         console.log("GET error:", error);
       } finally {
         setLoading(false);
@@ -54,58 +37,62 @@ function Posts({ user, onBack }) {
     }
 
     fetchPosts();
-  }, [storageKey]);
+  }, []);
+
+  // Input fields update karna
+  function handleChange(event) {
+    setPost({
+      ...post,
+      [event.target.name]: event.target.value,
+    });
+  }
 
   // POST: Nayi post add karna
   async function addPost(event) {
     event.preventDefault();
 
-    if (!title.trim() || !body.trim()) return;
+    if (!post.title.trim() || !post.body.trim()) {
+      setError("Title aur description dono likho.");
+      return;
+    }
 
     try {
-      const response = await fetch(
-        "https://jsonplaceholder.typicode.com/posts",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title,
-            body,
-            userId: 1,
-          }),
+      setError("");
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          title: post.title.trim(),
+          body: post.body.trim(),
+          userId: 1,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to add post");
+        throw new Error("Post add nahi ho saki.");
       }
 
       const result = await response.json();
+
+      setPosts([result, ...posts]);
+      setPost({ title: "", body: "" });
+
       console.log("POST response:", result);
-
-      const newPost = {
-        ...result,
-        id: Date.now(),
-        title: title.trim(),
-        body: body.trim(),
-      };
-
-      savePosts([newPost, ...posts]);
-      setTitle("");
-      setBody("");
       titleInputRef.current?.focus();
     } catch (error) {
+      setError(error.message);
       console.log("POST error:", error);
     }
   }
 
-  // Edit ke liye post form mein lana
-  function startEdit(post) {
-    setEditingPostId(post.id);
-    setTitle(post.title);
-    setBody(post.body);
+  // Edit button par post form mein lana
+  function startEdit(item) {
+    setEditingPostId(item.id);
+    setPost({ title: item.title, body: item.body });
+    setError("");
     titleInputRef.current?.focus();
   }
 
@@ -113,43 +100,33 @@ function Posts({ user, onBack }) {
   async function updatePost(event) {
     event.preventDefault();
 
-    if (!title.trim() || !body.trim()) return;
-
     try {
-      const response = await fetch(
-        `https://jsonplaceholder.typicode.com/posts/${editingPostId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: title.trim(),
-            body: body.trim(),
-          }),
+      setError("");
+
+      const response = await fetch(`${API_URL}/${editingPostId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(post),
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to update post");
+        throw new Error("Post update nahi ho saki.");
       }
 
       const result = await response.json();
-      console.log("PATCH response:", result);
 
-      const updatedPosts = posts.map((post) =>
-        post.id === editingPostId
-          ? {
-              ...post,
-              title: title.trim(),
-              body: body.trim(),
-            }
-          : post,
+      setPosts(
+        posts.map((item) =>
+          item.id === editingPostId ? { ...item, ...result } : item,
+        ),
       );
 
-      savePosts(updatedPosts);
       cancelEdit();
+      console.log("PATCH response:", result);
     } catch (error) {
+      setError(error.message);
       console.log("PATCH error:", error);
     }
   }
@@ -157,31 +134,32 @@ function Posts({ user, onBack }) {
   // DELETE: Post delete karna
   async function deletePost(id) {
     try {
-      const response = await fetch(
-        `https://jsonplaceholder.typicode.com/posts/${id}`,
-        { method: "DELETE" },
-      );
+      setError("");
+
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to delete post");
+        throw new Error("Post delete nahi ho saki.");
       }
 
-      console.log("DELETE response received for ID:", id);
-
-      savePosts(posts.filter((post) => post.id !== id));
+      setPosts(posts.filter((item) => item.id !== id));
 
       if (editingPostId === id) {
         cancelEdit();
       }
+
+      console.log("DELETE response received for ID:", id);
     } catch (error) {
+      setError(error.message);
       console.log("DELETE error:", error);
     }
   }
 
   function cancelEdit() {
     setEditingPostId(null);
-    setTitle("");
-    setBody("");
+    setPost({ title: "", body: "" });
   }
 
   return (
@@ -191,32 +169,36 @@ function Posts({ user, onBack }) {
       <h1>Posts Manager</h1>
       <p>Logged in as: {user.email}</p>
 
-      <form onSubmit={editingPostId ? updatePost : addPost}>
+      <form onSubmit={editingPostId !== null ? updatePost : addPost}>
         <input
           ref={titleInputRef}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          name="title"
+          value={post.title}
+          onChange={handleChange}
           placeholder="Post title"
           required
         />
 
         <textarea
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
+          name="body"
+          value={post.body}
+          onChange={handleChange}
           placeholder="Post description"
           required
         />
 
         <button type="submit">
-          {editingPostId ? "Update Post" : "Add Post"}
+          {editingPostId !== null ? "Update Post" : "Add Post"}
         </button>
 
-        {editingPostId && (
+        {editingPostId !== null && (
           <button type="button" onClick={cancelEdit}>
             Cancel
           </button>
         )}
       </form>
+
+      {error && <p role="alert">{error}</p>}
 
       <h2>Posts</h2>
 
@@ -225,14 +207,13 @@ function Posts({ user, onBack }) {
       ) : posts.length === 0 ? (
         <p>No posts available.</p>
       ) : (
-        posts.map((post) => (
-          <div key={post.id}>
-            <h3>{post.title}</h3>
-            <p>{post.body}</p>
+        posts.map((item) => (
+          <div key={item.id}>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
 
-            <button onClick={() => startEdit(post)}>Edit</button>
-
-            <button onClick={() => deletePost(post.id)}>Delete</button>
+            <button onClick={() => startEdit(item)}>Edit</button>
+            <button onClick={() => deletePost(item.id)}>Delete</button>
           </div>
         ))
       )}
