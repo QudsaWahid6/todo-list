@@ -1,4 +1,4 @@
-function Login({ onLogin }) {
+function Login({ onLogin, onSignup }) {
   return (
     <div className="container">
       <h1>Login</h1>
@@ -22,6 +22,13 @@ function Login({ onLogin }) {
 
         <button type="submit">Login</button>
       </form>
+
+      <p>
+        Don't have an account?{" "}
+        <button type="button" onClick={onSignup}>
+          Sign Up
+        </button>
+      </p>
     </div>
   );
 }

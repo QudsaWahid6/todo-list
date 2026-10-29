@@ -3,24 +3,44 @@ import { AuthContext } from "./context/AuthContext";
 
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import TodoList from "./pages/TodoList";
 import Posts from "./pages/Posts";
 
 import "./App.css";
 
 function App() {
-  const { user, login, logout } = useContext(AuthContext);
+  const { user, signup, login, logout } = useContext(AuthContext);
 
   const [page, setPage] = useState("landing");
 
-  function handleLogin(event) {
+  async function handleSignup(event) {
     event.preventDefault();
 
-    const email = event.target.email.value;
+    const email = event.target.email.value.trim();
     const password = event.target.password.value;
 
-    login(email, password);
-    setPage("todo");
+    try {
+      await signup(email, password);
+      alert("Signup successful! Now login with your account.");
+      setPage("login");
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
+
+    const email = event.target.email.value.trim();
+    const password = event.target.password.value;
+
+    try {
+      await login(email, password);
+      setPage("todo");
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   function handleLogout() {
@@ -42,11 +62,15 @@ function App() {
     );
   }
 
-  if (page === "login") {
-    return <Login onLogin={handleLogin} />;
+  if (page === "signup") {
+    return <Signup onSignup={handleSignup} onLogin={() => setPage("login")} />;
   }
 
-  return <Landing onGetStarted={() => setPage("login")} />;
+  if (page === "login") {
+    return <Login onLogin={handleLogin} onSignup={() => setPage("signup")} />;
+  }
+
+  return <Landing onGetStarted={() => setPage("signup")} />;
 }
 
 export default App;
