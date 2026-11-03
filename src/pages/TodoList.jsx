@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-function TodoList({ user, onLogout, onOpenPosts }) {
+function TodoList({ user, token, onLogout, onOpenPosts }) {
   const taskStorageKey = `todoTasks_${user.email.toLowerCase()}`;
-  const nameStorageKey = `todoUserName_${user.email.toLowerCase()}`;
 
   const [taskInput, setTaskInput] = useState("");
 
@@ -11,14 +10,9 @@ function TodoList({ user, onLogout, onOpenPosts }) {
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
 
-  const [savedName, setSavedName] = useState(
-    () => localStorage.getItem(nameStorageKey) || "",
-  );
-
+  const [savedName, setSavedName] = useState(user.name || "");
   const [nameInput, setNameInput] = useState("");
-  const [showWelcome, setShowWelcome] = useState(
-    () => !localStorage.getItem(nameStorageKey),
-  );
+  const [showWelcome, setShowWelcome] = useState(!user.name);
 
   const nameInputRef = useRef(null);
 
@@ -32,16 +26,34 @@ function TodoList({ user, onLogout, onOpenPosts }) {
     }
   }, [showWelcome]);
 
-  function handleSaveName(event) {
+  async function handleSaveName(event) {
     event.preventDefault();
 
     const name = nameInput.trim();
 
     if (name === "") return;
 
-    localStorage.setItem(nameStorageKey, name);
-    setSavedName(name);
-    setShowWelcome(false);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/name", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Name could not be saved");
+      }
+
+      setSavedName(data.name);
+      setShowWelcome(false);
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   function addTask(event) {
@@ -84,6 +96,7 @@ function TodoList({ user, onLogout, onOpenPosts }) {
           <button onClick={onLogout}>Logout</button>
           <button onClick={onOpenPosts}>Open Posts Manager</button>
         </div>
+
         <form onSubmit={addTask}>
           <input
             type="text"

@@ -10,7 +10,7 @@ import Posts from "./pages/Posts";
 import "./App.css";
 
 function App() {
-  const { user, signup, login, logout } = useContext(AuthContext);
+  const { user, token, signup, login, logout } = useContext(AuthContext);
 
   const [page, setPage] = useState("landing");
 
@@ -56,6 +56,7 @@ function App() {
     return (
       <TodoList
         user={user}
+        token={token}
         onLogout={handleLogout}
         onOpenPosts={() => setPage("posts")}
       />
