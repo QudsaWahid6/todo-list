@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
 function TodoList({ user, token, onLogout, onOpenPosts }) {
-  const taskStorageKey = `todoTasks_${user.email.toLowerCase()}`;
-
   const [taskInput, setTaskInput] = useState("");
-
-  const [tasks, setTasks] = useState(() => {
-    const savedTasks = localStorage.getItem(taskStorageKey);
-    return savedTasks ? JSON.parse(savedTasks) : [];
-  });
+  const [tasks, setTasks] = useState([]);
 
   const [savedName, setSavedName] = useState(user.name || "");
   const [nameInput, setNameInput] = useState("");
@@ -16,9 +10,30 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
 
   const nameInputRef = useRef(null);
 
+  // GET: Load tasks from MongoDB
   useEffect(() => {
-    localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
-  }, [tasks, taskStorageKey]);
+    async function getTasks() {
+      try {
+        const response = await fetch("http://localhost:5000/api/tasks", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to load tasks");
+        }
+
+        setTasks(data);
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    getTasks();
+  }, [token]);
 
   useEffect(() => {
     if (showWelcome) {
@@ -26,6 +41,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     }
   }, [showWelcome]);
 
+  // Save name in MongoDB
   async function handleSaveName(event) {
     event.preventDefault();
 
@@ -56,31 +72,79 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     }
   }
 
-  function addTask(event) {
+  // POST: Add new task
+  async function addTask(event) {
     event.preventDefault();
 
     if (taskInput.trim() === "") return;
 
-    const newTask = {
-      id: Date.now(),
-      title: taskInput.trim(),
-      completed: false,
-    };
+    try {
+      const response = await fetch("http://localhost:5000/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title: taskInput.trim() }),
+      });
 
-    setTasks([...tasks, newTask]);
-    setTaskInput("");
+      const newTask = await response.json();
+
+      if (!response.ok) {
+        throw new Error(newTask.message || "Task could not be added");
+      }
+
+      setTasks([...tasks, newTask]);
+      setTaskInput("");
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
-  function toggleTask(id) {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
-      ),
-    );
+  // PATCH: Update task
+  async function toggleTask(id, completed) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ completed: !completed }),
+      });
+
+      const updatedTask = await response.json();
+
+      if (!response.ok) {
+        throw new Error(updatedTask.message || "Task could not be updated");
+      }
+
+      setTasks(tasks.map((task) => (task._id === id ? updatedTask : task)));
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
-  function deleteTask(id) {
-    setTasks(tasks.filter((task) => task.id !== id));
+  // DELETE: Remove task
+  async function deleteTask(id) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Task could not be deleted");
+      }
+
+      setTasks(tasks.filter((task) => task._id !== id));
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   return (
@@ -89,7 +153,6 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
         <h1>My Todo List</h1>
 
         <p>Welcome, {savedName || user.email}!</p>
-
         <p>Stay organized, get things done!</p>
 
         <div className="header-buttons">
@@ -110,12 +173,12 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
 
         <ul>
           {tasks.map((task) => (
-            <li key={task.id}>
+            <li key={task._id}>
               <label>
                 <input
                   type="checkbox"
                   checked={task.completed}
-                  onChange={() => toggleTask(task.id)}
+                  onChange={() => toggleTask(task._id, task.completed)}
                 />
 
                 <span className={task.completed ? "completed" : ""}>
@@ -123,7 +186,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
                 </span>
               </label>
 
-              <button onClick={() => deleteTask(task.id)}>Delete</button>
+              <button onClick={() => deleteTask(task._id)}>Delete</button>
             </li>
           ))}
         </ul>
