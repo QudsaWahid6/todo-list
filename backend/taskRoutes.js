@@ -22,20 +22,24 @@ function protect(req, res, next) {
   }
 }
 
-// GET all tasks of logged-in user
+// GET: Get all active tasks of logged-in user
 router.get("/", protect, async (req, res) => {
   try {
-    const tasks = await Task.find({ userId: req.userId });
+    const tasks = await Task.find({
+      userId: req.userId,
+      deletedAt: null,
+    });
+
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: "Failed to get tasks" });
   }
 });
 
-// POST create a new task
+// POST: Create a new task
 router.post("/", protect, async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, description } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ message: "Task title is required" });
@@ -43,6 +47,7 @@ router.post("/", protect, async (req, res) => {
 
     const task = await Task.create({
       title: title.trim(),
+      description: description?.trim() || "",
       userId: req.userId,
     });
 
@@ -51,12 +56,25 @@ router.post("/", protect, async (req, res) => {
     res.status(500).json({ message: "Failed to create task" });
   }
 });
-// PATCH update a task
+
+// PATCH: Update a task
 router.patch("/:id", protect, async (req, res) => {
   try {
+    const { title, description, completed } = req.body;
+
+    const updates = {};
+
+    if (title !== undefined) updates.title = title;
+    if (description !== undefined) updates.description = description;
+    if (completed !== undefined) updates.completed = completed;
+
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
-      req.body,
+      {
+        _id: req.params.id,
+        userId: req.userId,
+        deletedAt: null,
+      },
+      { $set: updates },
       { new: true, runValidators: true },
     );
 
@@ -70,13 +88,20 @@ router.patch("/:id", protect, async (req, res) => {
   }
 });
 
-// DELETE a task
+// DELETE: Soft delete a task
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const task = await Task.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.userId,
-    });
+    const task = await Task.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId: req.userId,
+        deletedAt: null,
+      },
+      {
+        $set: { deletedAt: new Date() },
+      },
+      { new: true },
+    );
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [taskInput, setTaskInput] = useState("");
+  const [description, setDescription] = useState("");
   const [tasks, setTasks] = useState([]);
 
   const [savedName, setSavedName] = useState(user.name || "");
@@ -35,6 +36,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     getTasks();
   }, [token]);
 
+  // Focus name input when welcome popup opens
   useEffect(() => {
     if (showWelcome) {
       nameInputRef.current?.focus();
@@ -85,7 +87,10 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: taskInput.trim() }),
+        body: JSON.stringify({
+          title: taskInput.trim(),
+          description: description.trim(),
+        }),
       });
 
       const newTask = await response.json();
@@ -96,6 +101,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
 
       setTasks([...tasks, newTask]);
       setTaskInput("");
+      setDescription("");
     } catch (error) {
       alert(error.message);
     }
@@ -125,7 +131,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     }
   }
 
-  // DELETE: Remove task
+  // DELETE: Soft delete task
   async function deleteTask(id) {
     try {
       const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
@@ -160,6 +166,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
           <button onClick={onOpenPosts}>Open Posts Manager</button>
         </div>
 
+        {/* Add Task Form */}
         <form onSubmit={addTask}>
           <input
             type="text"
@@ -168,9 +175,17 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
             placeholder="Write a task..."
           />
 
+          <input
+            type="text"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Write description..."
+          />
+
           <button type="submit">Add Task</button>
         </form>
 
+        {/* Display Tasks */}
         <ul>
           {tasks.map((task) => (
             <li key={task._id}>
@@ -186,12 +201,15 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
                 </span>
               </label>
 
+              <p>{task.description}</p>
+
               <button onClick={() => deleteTask(task._id)}>Delete</button>
             </li>
           ))}
         </ul>
       </div>
 
+      {/* Welcome Popup */}
       {showWelcome && (
         <div className="modal-overlay">
           <div className="welcome-modal">
