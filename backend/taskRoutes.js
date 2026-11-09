@@ -18,7 +18,7 @@ function protect(req, res, next) {
 
     next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ error });
   }
 }
 
@@ -32,7 +32,7 @@ router.get("/", protect, async (req, res) => {
 
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: "Failed to get tasks" });
+    res.status(500).json({ error });
   }
 });
 
@@ -53,38 +53,7 @@ router.post("/", protect, async (req, res) => {
 
     res.status(201).json(task);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create task" });
-  }
-});
-
-// PATCH: Update a task
-router.patch("/:id", protect, async (req, res) => {
-  try {
-    const { title, description, completed } = req.body;
-
-    const updates = {};
-
-    if (title !== undefined) updates.title = title;
-    if (description !== undefined) updates.description = description;
-    if (completed !== undefined) updates.completed = completed;
-
-    const task = await Task.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        userId: req.userId,
-        deletedAt: null,
-      },
-      { $set: updates },
-      { new: true, runValidators: true },
-    );
-
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update task" });
+    res.status(500).json({ error });
   }
 });
 
@@ -109,7 +78,7 @@ router.delete("/:id", protect, async (req, res) => {
 
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete task" });
+    res.status(500).json({ error });
   }
 });
 
