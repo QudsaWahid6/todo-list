@@ -8,7 +8,9 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [savedName, setSavedName] = useState(user.name || "");
   const [nameInput, setNameInput] = useState("");
   const [showWelcome, setShowWelcome] = useState(!user.name);
-
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const nameInputRef = useRef(null);
 
   // GET: Load tasks from MongoDB
@@ -36,14 +38,14 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     getTasks();
   }, [token]);
 
-  // Focus name input when welcome popup opens
+  // Focus name input when popup or edit form opens
   useEffect(() => {
-    if (showWelcome) {
+    if (showWelcome || isEditingName) {
       nameInputRef.current?.focus();
     }
-  }, [showWelcome]);
+  }, [showWelcome, isEditingName]);
 
-  // Save name in MongoDB
+  // Save or update name in MongoDB
   async function handleSaveName(event) {
     event.preventDefault();
 
@@ -68,7 +70,9 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
       }
 
       setSavedName(data.name);
+      setNameInput("");
       setShowWelcome(false);
+      setIsEditingName(false);
     } catch (error) {
       alert(error.message);
     }
@@ -152,19 +156,90 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
       alert(error.message);
     }
   }
+  async function getProfile() {
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to get profile");
+      }
+
+      setProfile(data);
+      setShowProfile(true);
+    } catch (error) {
+      alert(error.message);
+    }
+  }
   return (
     <>
       <div className="container todo-page">
         <h1>My Todo List</h1>
 
-        <p>Welcome, {savedName || user.email}!</p>
+        <div className="name-section">
+          <p>Welcome, {savedName || user.email}!</p>
+
+          {!showWelcome && (
+            <button
+              type="button"
+              onClick={() => {
+                setNameInput(savedName);
+                setIsEditingName(true);
+              }}
+            >
+              Edit Name
+            </button>
+          )}
+        </div>
+
+        {isEditingName && (
+          <form onSubmit={handleSaveName}>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={nameInput}
+              onChange={(event) => setNameInput(event.target.value)}
+              placeholder="Enter your new name"
+              required
+            />
+
+            <button type="submit">Save Name</button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditingName(false);
+                setNameInput("");
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+
         <p>Stay organized, get things done!</p>
 
         <div className="header-buttons">
+          <button onClick={getProfile}>My Profile</button>
           <button onClick={onLogout}>Logout</button>
           <button onClick={onOpenPosts}>Open Posts Manager</button>
         </div>
+        {showProfile && profile && (
+          <div className="profile-box">
+            <h2>My Profile</h2>
+
+            <p>Name: {profile.name || "Not added"}</p>
+            <p>Email: {profile.email}</p>
+            <p>ID: {profile.id}</p>
+
+            <button onClick={() => setShowProfile(false)}>Close Profile</button>
+          </div>
+        )}
 
         {/* Add Task Form */}
         <form onSubmit={addTask}>

@@ -37,13 +37,12 @@ router.post("/signup", async (req, res) => {
 
 // Login API
 router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { email, password } = req.body;
-
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email " });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -74,7 +73,8 @@ router.post("/login", async (req, res) => {
 router.patch("/name", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-
+    // bearer abct123....
+    // [bearer, abc123ty]
     if (!token) {
       return res.status(401).json({ message: "Token is required" });
     }
@@ -92,7 +92,7 @@ router.patch("/name", async (req, res) => {
       { name: name.trim() },
       { new: true },
     );
-
+    //qudsa wahid
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -102,8 +102,33 @@ router.patch("/name", async (req, res) => {
       name: user.name,
     });
   } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
+    res.status(401).json({ error });
   }
 });
+// Get User Profile API
+router.get("/profile", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
 
+    if (!token) {
+      return res.status(401).json({ message: "Token is required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(401).json({ error });
+  }
+});
 export default router;

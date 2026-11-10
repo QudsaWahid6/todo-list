@@ -8,7 +8,7 @@ const router = express.Router();
 function protect(req, res, next) {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-
+    console.log(req.headers.authorization.split(" "));
     if (!token) {
       return res.status(401).json({ message: "Token is required" });
     }
