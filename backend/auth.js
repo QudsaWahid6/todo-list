@@ -31,7 +31,7 @@ router.post("/signup", async (req, res) => {
 
     res.status(201).json({ message: "Signup successful" });
   } catch (error) {
-    res.status(500).json({ message: "Signup failed" });
+    res.status(500).json({ error });
   }
 });
 
@@ -65,7 +65,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Login failed" });
+    res.status(500).json({ error });
   }
 });
 

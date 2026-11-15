@@ -22,15 +22,29 @@ function protect(req, res, next) {
   }
 }
 
-// GET: Get all active tasks of logged-in user
+// GET: Get tasks of logged-in user with offset pagination
 router.get("/", protect, async (req, res) => {
   try {
-    const tasks = await Task.find({
+    const offset = Number(req.query.offset) || 0;
+    const limit = Number(req.query.limit) || 5;
+
+    const totalTasks = await Task.countDocuments({
       userId: req.userId,
       deletedAt: null,
     });
 
-    res.json(tasks);
+    const tasks = await Task.find({
+      userId: req.userId,
+      deletedAt: null,
+    })
+      .skip(offset)
+      .limit(limit);
+
+    res.json({
+      tasks,
+      totalTasks,
+      hasMore: offset + tasks.length < totalTasks,
+    });
   } catch (error) {
     res.status(500).json({ error });
   }

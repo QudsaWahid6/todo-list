@@ -12,16 +12,26 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const nameInputRef = useRef(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [refreshTasks, setRefreshTasks] = useState(0);
 
-  // GET: Load tasks from MongoDB
+  const limit = 5;
+
+  // GET: Load tasks with offset pagination
   useEffect(() => {
     async function getTasks() {
       try {
-        const response = await fetch("http://localhost:5000/api/tasks", {
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const offset = (page - 1) * limit;
+
+        const response = await fetch(
+          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         const data = await response.json();
 
@@ -29,14 +39,15 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
           throw new Error(data.message || "Failed to load tasks");
         }
 
-        setTasks(data);
+        setTasks(data.tasks);
+        setHasMore(data.hasMore);
       } catch (error) {
         alert(error.message);
       }
     }
 
     getTasks();
-  }, [token]);
+  }, [token, page, refreshTasks]);
 
   // Focus name input when popup or edit form opens
   useEffect(() => {
@@ -103,7 +114,8 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
         throw new Error(newTask.message || "Task could not be added");
       }
 
-      setTasks([...tasks, newTask]);
+      setPage(1);
+      setRefreshTasks((prev) => prev + 1);
       setTaskInput("");
       setDescription("");
     } catch (error) {
@@ -151,7 +163,11 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
         throw new Error(data.message || "Task could not be deleted");
       }
 
-      setTasks(tasks.filter((task) => task._id !== id));
+      if (tasks.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        setRefreshTasks((prev) => prev + 1);
+      }
     } catch (error) {
       alert(error.message);
     }
@@ -282,6 +298,18 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
             </li>
           ))}
         </ul>
+        {/* Pagination Buttons */}
+        <div className="pagination">
+          <button onClick={() => setPage(page - 1)} disabled={page === 1}>
+            Previous
+          </button>
+
+          <span>Page {page}</span>
+
+          <button onClick={() => setPage(page + 1)} disabled={!hasMore}>
+            Next
+          </button>
+        </div>
       </div>
 
       {/* Welcome Popup */}
