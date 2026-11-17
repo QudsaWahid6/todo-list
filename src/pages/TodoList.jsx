@@ -16,16 +16,19 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [hasMore, setHasMore] = useState(false);
   const [refreshTasks, setRefreshTasks] = useState(0);
 
+  const [order, setOrder] = useState("asc");
+  const [status, setStatus] = useState("null");
   const limit = 5;
+  const [totalTasks, setTotalTasks] = useState(0);
 
-  // GET: Load tasks with offset pagination
+  // GET: Load tasks with pagination, sorting and filtering
   useEffect(() => {
     async function getTasks() {
       try {
         const offset = (page - 1) * limit;
 
         const response = await fetch(
-          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}`,
+          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}&sortBy=title&order=${order}&status=${status}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -41,13 +44,14 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
 
         setTasks(data.tasks);
         setHasMore(data.hasMore);
+        setTotalTasks(data.totalTasks);
       } catch (error) {
         alert(error.message);
       }
     }
 
     getTasks();
-  }, [token, page, refreshTasks]);
+  }, [token, page, refreshTasks, order, status]);
 
   // Focus name input when popup or edit form opens
   useEffect(() => {
@@ -192,6 +196,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
       alert(error.message);
     }
   }
+  const totalPages = Math.max(1, Math.ceil(totalTasks / limit));
   return (
     <>
       <div className="container todo-page">
@@ -276,35 +281,95 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
           <button type="submit">Add Task</button>
         </form>
 
+        {/* Sorting and Filtering */}
+        <div className="task-filters">
+          <label>
+            Order:
+            <select
+              value={order}
+              onChange={(event) => {
+                setOrder(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="asc">Ascending (A-Z / Earliest)</option>
+              <option value="desc">Descending (Z-A / Latest)</option>
+            </select>
+          </label>
+
+          <label>
+            Status:
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="null">All Tasks</option>
+              <option value="completed">Completed</option>
+              <option value="todo">Todo</option>
+            </select>
+          </label>
+        </div>
+
         {/* Display Tasks */}
-        <ul>
+        <ul className="task-list">
           {tasks.map((task) => (
-            <li key={task._id}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={task.completed}
-                  onChange={() => toggleTask(task._id, task.completed)}
-                />
+            <li className="task-card" key={task._id}>
+              <div className="task-details">
+                <label className="task-heading">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => toggleTask(task._id, task.completed)}
+                  />
 
-                <span className={task.completed ? "completed" : ""}>
-                  {task.title}
-                </span>
-              </label>
+                  <span className={task.completed ? "completed" : ""}>
+                    {task.title}
+                  </span>
+                </label>
 
-              <p>{task.description}</p>
+                <p className="task-description">{task.description}</p>
+              </div>
 
-              <button onClick={() => deleteTask(task._id)}>Delete</button>
+              <div className="task-meta">
+                <p>
+                  <strong>Created:</strong>{" "}
+                  {new Date(task.createdAt).toLocaleString()}
+                </p>
+
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span
+                    className={
+                      task.completed ? "status-completed" : "status-todo"
+                    }
+                  >
+                    {task.completed ? "Completed" : "Todo"}
+                  </span>
+                </p>
+              </div>
+
+              <button
+                className="delete-task-btn"
+                onClick={() => deleteTask(task._id)}
+              >
+                Delete
+              </button>
             </li>
           ))}
         </ul>
+
         {/* Pagination Buttons */}
         <div className="pagination">
           <button onClick={() => setPage(page - 1)} disabled={page === 1}>
             Previous
           </button>
 
-          <span>Page {page}</span>
+          <span>
+            Page {page} / {totalPages}
+          </span>
 
           <button onClick={() => setPage(page + 1)} disabled={!hasMore}>
             Next

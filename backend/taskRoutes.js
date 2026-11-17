@@ -22,21 +22,40 @@ function protect(req, res, next) {
   }
 }
 
-// GET: Get tasks of logged-in user with offset pagination
+// GET: Get tasks with pagination, sorting and status filtering
 router.get("/", protect, async (req, res) => {
   try {
     const offset = Number(req.query.offset) || 0;
     const limit = Number(req.query.limit) || 5;
 
-    const totalTasks = await Task.countDocuments({
-      userId: req.userId,
-      deletedAt: null,
-    });
+    // Get sorting and filtering options from URL
+    const sortBy = req.query.sortBy || "title";
+    const order = req.query.order || "asc";
+    const status = req.query.status || "null";
 
-    const tasks = await Task.find({
+    // Only allow title or createdAt sorting
+    const sortField = sortBy === "createdAt" ? "createdAt" : "title";
+
+    // Ascending = 1, Descending = -1
+    const sortOrder = order === "desc" ? -1 : 1;
+
+    // Get only logged-in user's active tasks
+    const filter = {
       userId: req.userId,
       deletedAt: null,
-    })
+    };
+
+    // Filter by task status
+    if (status === "completed") {
+      filter.completed = true;
+    } else if (status === "todo") {
+      filter.completed = false;
+    }
+
+    const totalTasks = await Task.countDocuments(filter);
+
+    const tasks = await Task.find(filter)
+      .sort({ [sortField]: sortOrder })
       .skip(offset)
       .limit(limit);
 
@@ -66,6 +85,39 @@ router.post("/", protect, async (req, res) => {
     });
 
     res.status(201).json(task);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
+
+// PATCH: Update task completion status
+router.patch("/:id", protect, async (req, res) => {
+  try {
+    const { completed } = req.body;
+
+    if (typeof completed !== "boolean") {
+      return res.status(400).json({
+        message: "Completed must be true or false",
+      });
+    }
+
+    const task = await Task.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId: req.userId,
+        deletedAt: null,
+      },
+      {
+        $set: { completed: completed },
+      },
+      { new: true },
+    );
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(task);
   } catch (error) {
     res.status(500).json({ error });
   }
