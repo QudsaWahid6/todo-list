@@ -11,25 +11,45 @@ router.post("/signup", async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
 
-    const existingUser = await User.findOne({ email });
+    // Check email format
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!emailPattern.test(cleanEmail)) {
+      return res.status(400).json({
+        message: "Please enter a valid email address",
+      });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({
+      email: cleanEmail,
+    });
 
     if (existingUser) {
-      return res.status(409).json({ message: "Email already registered" });
+      return res.status(409).json({
+        message: "Email already registered",
+      });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new user
     await User.create({
-      email,
+      email: cleanEmail,
       password: hashedPassword,
     });
 
-    res.status(201).json({ message: "Signup successful" });
+    res.status(201).json({
+      message: "Signup successful",
+    });
   } catch (error) {
     res.status(500).json({ error });
   }

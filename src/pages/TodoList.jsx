@@ -15,7 +15,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [refreshTasks, setRefreshTasks] = useState(0);
-
+  const [sortBy, setSortBy] = useState("title");
   const [order, setOrder] = useState("asc");
   const [status, setStatus] = useState("null");
   const limit = 5;
@@ -28,7 +28,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
         const offset = (page - 1) * limit;
 
         const response = await fetch(
-          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}&sortBy=title&order=${order}&status=${status}`,
+          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}&sortBy=${sortBy}&order=${order}&status=${status}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -51,7 +51,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     }
 
     getTasks();
-  }, [token, page, refreshTasks, order, status]);
+  }, [token, page, refreshTasks, sortBy, order, status]);
 
   // Focus name input when popup or edit form opens
   useEffect(() => {
@@ -283,6 +283,20 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
 
         {/* Sorting and Filtering */}
         <div className="task-filters">
+          <label>
+            Sort By:
+            <select
+              value={sortBy}
+              onChange={(event) => {
+                setSortBy(event.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="title">Title</option>
+              <option value="createdAt">Created At</option>
+            </select>
+          </label>
+
           <label>
             Order:
             <select
