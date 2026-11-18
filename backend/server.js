@@ -17,17 +17,8 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully");
+await mongoose.connect(process.env.MONGO_URI);
 
-    const PORT = process.env.PORT || 5000;
+console.log("MongoDB connected successfully");
 
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.log("MongoDB connection failed:", error.message);
-  });
+export default app;
