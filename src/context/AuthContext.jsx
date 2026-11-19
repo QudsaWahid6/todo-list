@@ -1,5 +1,7 @@
 import { createContext, useState } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -7,7 +9,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
 
   async function signup(email, password) {
-    const response = await fetch("http://localhost:5000/api/auth/signup", {
+    const response = await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,7 +27,7 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
-    const response = await fetch("http://localhost:5000/api/auth/login", {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
