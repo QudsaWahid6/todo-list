@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+const API_URL = "https://todo-list-backend-two-tan.vercel.app/api";
+
 function TodoList({ user, token, onLogout, onOpenPosts }) {
   const [taskInput, setTaskInput] = useState("");
   const [description, setDescription] = useState("");
@@ -28,7 +30,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
         const offset = (page - 1) * limit;
 
         const response = await fetch(
-          `http://localhost:5000/api/tasks?offset=${offset}&limit=${limit}&sortBy=${sortBy}&order=${order}&status=${status}`,
+          `${API_URL}/tasks?offset=${offset}&limit=${limit}&sortBy=${sortBy}&order=${order}&status=${status}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -69,7 +71,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     if (name === "") return;
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/name", {
+      const response = await fetch(`${API_URL}/auth/name`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +102,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
     if (taskInput.trim() === "") return;
 
     try {
-      const response = await fetch("http://localhost:5000/api/tasks", {
+      const response = await fetch(`${API_URL}/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -130,7 +132,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   // PATCH: Update task
   async function toggleTask(id, completed) {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +156,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   // DELETE: Soft delete task
   async function deleteTask(id) {
     try {
-      const response = await fetch(`http://localhost:5000/api/tasks/${id}`, {
+      const response = await fetch(`${API_URL}/tasks/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -178,7 +180,7 @@ function TodoList({ user, token, onLogout, onOpenPosts }) {
   }
   async function getProfile() {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/profile", {
+      const response = await fetch(`${API_URL}/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
