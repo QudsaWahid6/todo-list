@@ -4,6 +4,9 @@ function Signup({ onSignup, onLogin }) {
       <h1>Create Account</h1>
 
       <form onSubmit={onSignup}>
+        <label>Name</label>
+        <input type="text" name="name" placeholder="Enter your name" required />
+
         <label>Email</label>
         <input
           type="email"
@@ -16,8 +19,8 @@ function Signup({ onSignup, onLogin }) {
         <input
           type="password"
           name="password"
-          placeholder="Create a password"
-          minLength={6}
+          placeholder="Create a password (minimum 8 characters)"
+          minLength={8}
           required
         />
 

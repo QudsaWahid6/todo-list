@@ -8,13 +8,13 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
-  async function signup(email, password) {
+  async function signup(name, email, password) {
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ name, email, password }),
     });
 
     const data = await response.json();

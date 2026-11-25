@@ -17,13 +17,17 @@ function App() {
   async function handleSignup(event) {
     event.preventDefault();
 
+    const name = event.target.name.value.trim();
     const email = event.target.email.value.trim();
     const password = event.target.password.value;
 
     try {
-      await signup(email, password);
-      alert("Signup successful! Now login with your account.");
-      setPage("login");
+      await signup(name, email, password);
+
+      await login(email, password);
+
+      alert("Account created successfully!");
+      setPage("todo");
     } catch (error) {
       alert(error.message);
     }

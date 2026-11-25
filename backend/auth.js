@@ -5,20 +5,23 @@ import User from "./User.js";
 
 const router = express.Router();
 
-// Signup API
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!email || !password) {
+    if (!name || !name.trim() || !email || !password) {
       return res.status(400).json({
-        message: "Email and password are required",
+        message: "Name, email and password are required",
       });
     }
 
-    // Check email format
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+      });
+    }
 
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cleanEmail = email.trim().toLowerCase();
 
     if (!emailPattern.test(cleanEmail)) {
@@ -27,7 +30,6 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    // Check if email already exists
     const existingUser = await User.findOne({
       email: cleanEmail,
     });
@@ -38,11 +40,10 @@ router.post("/signup", async (req, res) => {
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
     await User.create({
+      name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
     });
@@ -51,7 +52,9 @@ router.post("/signup", async (req, res) => {
       message: "Signup successful",
     });
   } catch (error) {
-    res.status(500).json({ error });
+    res.status(500).json({
+      message: "Signup failed",
+    });
   }
 });
 
